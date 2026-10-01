@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eufy-cam-mcp"
+version = "0.1.0"
+description = "MeshVault Eufy camera MCP — snapshots, status, and recordings via local MediaMTX"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=3.4.4,<4",
+    "ruff>=0.16.8",
+]
+
+[project.scripts]
+eufy-cam-mcp = "eufy_cam_mcp.server:main"
+
+# Test runner for tests/test_server_tools.py. Declared here (not installed ad hoc)
+# so `uv sync --frozen` + `uv run pytest` work in CI with a pinned lock.
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eufy_cam_mcp"]

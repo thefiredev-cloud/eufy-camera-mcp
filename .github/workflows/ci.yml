@@ -1,0 +1,39 @@
+name: CI & Boundary Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint & Security Boundary Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        # Must satisfy pyproject requires-python >=3.12 / uv.lock requires-python.
+        run: uv python install 3.12
+
+      - name: Install Dependencies
+        run: uv sync --frozen
+
+      - name: Linting (Ruff)
+        run: uv run ruff check .
+
+      - name: Camera Boundary Enforcement Test
+        run: uv run python scripts/check-camera-boundaries.py
+
+      - name: Test Suite
+        run: uv run pytest -v
