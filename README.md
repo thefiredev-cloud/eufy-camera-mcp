@@ -1,54 +1,90 @@
-# eufy-cam-mcp
+# eufy-camera-mcp
 
-## What it is
+[![CI](https://github.com/thefiredev-cloud/eufy-camera-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thefiredev-cloud/eufy-camera-mcp/actions/workflows/ci.yml)
 
-A Python FastMCP server that exposes an allowlisted set of local Eufy cameras (snapshots, status, motion clips) through MediaMTX on localhost.
+A Python [FastMCP](https://gofastmcp.com) server that gives an AI agent view-only access to an allowlisted set of local Eufy cameras through [MediaMTX](https://github.com/bluenviron/mediamtx): live status, a single JPEG snapshot, and recorded motion clips. It has no PTZ, no talkback, and no cloud API.
 
 ## Why it exists
 
-Agents need camera status and a single JPEG without talking to unknown camera names, hitting the network except MediaMTX, or driving PTZ.
+An agent that can see a camera should not be able to reach cameras it was not given, call out to the internet, or move the camera. This server keeps the surface small: four known camera names, localhost MediaMTX only, and one frame at a time.
 
-## How to run it
+## Tools
 
-Runtime: Python >= 3.12, [uv](https://docs.astral.sh/uv/), lockfile `uv.lock`. Entry point: `eufy-cam-mcp` → `eufy_cam_mcp.server:main`.
+| Tool | What it returns |
+|---|---|
+| `list_cameras` | Each known camera with its ready state from MediaMTX |
+| `camera_status` | Ready state, tracks, and error counters for one camera |
+| `snapshot_camera` | Path to one JPEG frame grabbed with `ffmpeg` from local RTSP, plus a `<name>_latest.jpg` link |
+| `recordings_info` | Segment count, disk use, and oldest and newest recording |
+| `motion_clips` | Newest motion recordings for one camera, `limit` between 1 and 50 |
+| `clip_frame` | Path to one JPEG frame at `t` seconds into a named clip in the recordings folder |
+
+Every per-camera tool rejects names outside the allowlist, including path traversal attempts such as `../../outside`, before any MediaMTX call or `ffmpeg` process. `clip_frame` also rejects clip names that are not a bare `*.mp4` file name.
+
+## Requirements
+
+- Python 3.12 or newer and [uv](https://docs.astral.sh/uv/)
+- `ffmpeg` on `PATH`
+- A MediaMTX instance on the same host that publishes your cameras as `eufy_cam1` to `eufy_cam4`
+- A recorder that writes `<name>_*.mp4` segments, if you want the recording tools (not part of this repo)
+
+## Install and run
 
 ```bash
+git clone https://github.com/thefiredev-cloud/eufy-camera-mcp.git
+cd eufy-camera-mcp
 uv sync --frozen
 uv run eufy-cam-mcp
 ```
 
-That starts the MCP stdio server. It expects MediaMTX at `http://127.0.0.1:9997` (API) and `rtsp://127.0.0.1:8554/<name>` (ffmpeg snapshots). Known names are hard-coded: `eufy_cam1`, `eufy_cam2`, `eufy_cam3`, `eufy_cam4`. Snapshots write under `~/meshvault/camera/snapshots`; recordings are read from `~/meshvault/camera/recordings`.
+This starts the MCP server on stdio. Register it with your MCP client as a stdio command, for example:
 
-You supply the camera side: a MediaMTX instance that publishes your cameras under those four path names, and `ffmpeg` on `PATH`. The recorder that writes the `<name>_*.mp4` segments read by `recordings_info`, `motion_clips` and `clip_frame` is not part of this repository. To use other camera names, edit `KNOWN_CAMS` in `src/eufy_cam_mcp/server.py`.
-
-If MediaMTX is not up, the documented no-camera happy path is the allowlist check (no network, no ffmpeg):
-
-```bash
-uv sync --frozen
-uv run python scripts/check-camera-boundaries.py
+```json
+{
+  "mcpServers": {
+    "eufy-cam": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/eufy-camera-mcp", "run", "eufy-cam-mcp"]
+    }
+  }
+}
 ```
 
-Tools in `src/eufy_cam_mcp/server.py`: `list_cameras`, `camera_status`, `snapshot_camera`, `recordings_info`, `motion_clips`, `clip_frame`.
+## Configuration
 
-## In scope / out of scope
+Settings are constants at the top of `src/eufy_cam_mcp/server.py`:
 
-In scope:
+| Constant | Default |
+|---|---|
+| `MEDIA_MTX_API` | `http://127.0.0.1:9997` |
+| `MEDIA_MTX_RTSP` | `rtsp://127.0.0.1:8554` |
+| `KNOWN_CAMS` | `eufy_cam1`, `eufy_cam2`, `eufy_cam3`, `eufy_cam4` |
+| `SNAP_DIR` | `~/meshvault/camera/snapshots` (snapshots are written here) |
+| `REC_DIR` | `~/meshvault/camera/recordings` (recordings are read from here) |
 
-- Allowlisted camera names only.
-- Ready-state from MediaMTX `/v3/paths/list`.
-- One-frame ffmpeg JPEG from local RTSP.
-- Listing local `*.mp4` motion segments and extracting one frame from a named clip.
+The `~/meshvault/...` folders are the defaults used on the author's machines. Edit the constants to match your layout; there are no environment variable overrides yet.
 
-Out of scope:
+## Check it without cameras
 
-- PTZ, talkback, cloud Eufy APIs, or cameras outside `eufy_cam1`–`eufy_cam4`.
-- Recording or retention (that belongs to the recorder service; this server only reports files on disk).
-- Path traversal camera names (`../../outside` and similar are rejected before API or ffmpeg).
+The boundary check calls `camera_status` and `snapshot_camera` with bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created:
 
-## Current production URL
+```bash
+uv run python scripts/check-camera-boundaries.py
+uv run pytest -v
+```
 
-Not deployed.
+CI runs Ruff, the boundary check, and the test suite on pushes and pull requests to `main`.
+
+## Scope
+
+In scope: allowlisted names, MediaMTX ready state from `/v3/paths/list`, one-frame JPEG capture, and listing and sampling local motion clips.
+
+Out of scope: PTZ, talkback, Eufy cloud APIs, recording, and retention. Recording belongs to a separate recorder service; this server only reports files already on disk.
 
 ## Status
 
-live
+Working, version 0.1.0. Not published to PyPI and not deployed as a hosted service.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
