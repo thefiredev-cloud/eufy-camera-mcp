@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -74,7 +76,7 @@ def test_clip_frame_rejects_unknown_camera(cam_dirs, monkeypatch):
 
 def test_clip_frame_rejects_missing_clip(cam_dirs, monkeypatch):
     monkeypatch.setattr(server.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("ffmpeg ran")))
-    out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "missing.mp4", "t": 5}))
+    out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "eufy_cam1_missing.mp4", "t": 5}))
     assert out["error"] == "clip not found"
 
 
@@ -84,3 +86,36 @@ def test_clip_frame_rejects_path_escape(cam_dirs, monkeypatch):
     monkeypatch.setattr(server.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("ffmpeg ran")))
     out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "../../etc/passwd", "t": 5}))
     assert out["error"] in ("clip not found", "invalid clip name")
+
+
+def test_clip_frame_rejects_other_cameras_clip(cam_dirs, monkeypatch):
+    rec, _ = cam_dirs
+    (rec / "eufy_cam1_a.mp4").write_bytes(b"x")
+    monkeypatch.setattr(server.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("ffmpeg ran")))
+    out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam2", "clip": "eufy_cam1_a.mp4", "t": 1}))
+    assert out["error"] == "clip does not belong to camera"
+
+
+@pytest.mark.parametrize("t", [-1, -0.5])
+def test_clip_frame_rejects_bad_t(cam_dirs, monkeypatch, t):
+    rec, _ = cam_dirs
+    (rec / "eufy_cam1_a.mp4").write_bytes(b"x")
+    monkeypatch.setattr(server.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("ffmpeg ran")))
+    out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "eufy_cam1_a.mp4", "t": t}))
+    assert out["error"] == "invalid t"
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_clip_frame_extracts_jpeg_from_synthetic_clip(cam_dirs):
+    rec, snap = cam_dirs
+    subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=duration=3:size=64x48:rate=5",
+         "-pix_fmt", "yuv420p", str(rec / "eufy_cam1_synthetic.mp4")],
+        check=True,
+    )
+    out = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "eufy_cam1_synthetic.mp4", "t": 1}))
+    path = Path(out["path"])
+    assert path.parent == snap
+    assert path.read_bytes()[:3] == b"\xff\xd8\xff"
+    past_end = asyncio_run(client_call("clip_frame", {"name": "eufy_cam1", "clip": "eufy_cam1_synthetic.mp4", "t": 99}))
+    assert past_end["error"] == "ffmpeg extraction failed"

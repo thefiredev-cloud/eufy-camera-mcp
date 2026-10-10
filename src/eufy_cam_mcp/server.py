@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import subprocess
 import urllib.request
 from datetime import UTC, datetime
@@ -116,13 +117,18 @@ def clip_frame(name: str = "eufy_cam1", clip: str = "", t: float = 5.0) -> dict:
         return {"name": name, "error": "unknown camera"}
     if not clip or Path(clip).name != clip or not clip.endswith(".mp4"):
         return {"name": name, "error": "invalid clip name"}
+    if not clip.startswith(f"{name}_"):
+        return {"name": name, "error": "clip does not belong to camera"}
+    if not math.isfinite(t) or t < 0:
+        return {"name": name, "error": "invalid t"}
     src = REC_DIR / clip
     if not src.is_file():
         return {"name": name, "error": "clip not found"}
     SNAP_DIR.mkdir(parents=True, exist_ok=True)
     out = SNAP_DIR / f"{name}_{Path(clip).stem}_t{t:g}.jpg"
+    out.unlink(missing_ok=True)
     res = subprocess.run(
-        ["ffmpeg", "-y", "-ss", str(t), "-i", str(src), "-vframes", "1", str(out)],
+        ["ffmpeg", "-y", "-ss", str(t), "-i", str(src), "-frames:v", "1", "-update", "1", str(out)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60, check=False,
     )
     if res.returncode == 0 and out.exists():

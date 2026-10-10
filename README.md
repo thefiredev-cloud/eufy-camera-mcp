@@ -19,11 +19,11 @@ The server registers six tools (`src/eufy_cam_mcp/server.py`).
 | `snapshot_camera` | Path to one JPEG frame grabbed with `ffmpeg` from local RTSP, plus a `<name>_latest.jpg` symlink to it |
 | `recordings_info` | Segment count, total bytes, first and last file name in the recordings folder, and a fixed retention note |
 | `motion_clips` | Paths of the newest `<name>_*.mp4` recordings for one camera by modification time, `limit` clamped to 1 to 50 |
-| `clip_frame` | Path to one JPEG frame at `t` seconds into a named clip in the recordings folder |
+| `clip_frame` | Path to one JPEG frame at `t` seconds into a named clip of that camera in the recordings folder |
 
-Every per-camera tool rejects names outside the allowlist, including path traversal attempts such as `../../outside`, before any MediaMTX call or `ffmpeg` process. `clip_frame` also rejects clip names that are not a bare `*.mp4` file name, and returns `clip not found` for a name that does not exist in the recordings folder. It does not check that the clip file name starts with the camera name, and it does not range-check `t`.
+Every per-camera tool rejects names outside the allowlist, including path traversal attempts such as `../../outside`, before any MediaMTX call or `ffmpeg` process. `clip_frame` also rejects clip names that are not a bare `*.mp4` file name, clips whose name does not start with `<name>_` (a camera cannot read another camera's recording), and a negative or non-finite `t`. It returns `clip not found` for a name that does not exist in the recordings folder, and `ffmpeg extraction failed` when `t` is past the end of the clip.
 
-`snapshot_camera` and `clip_frame` write JPEGs to the snapshot folder. Nothing deletes them. `recordings_info` sorts by file name, so with several cameras its first and last entries are alphabetical, not oldest and newest in time.
+`snapshot_camera` and `clip_frame` write JPEGs to the snapshot folder. Nothing deletes them. `clip_frame` names its file `<name>_<clip stem>_t<t>.jpg`, so repeating a call overwrites the earlier frame. `recordings_info` sorts by file name, so with several cameras its first and last entries are alphabetical, not oldest and newest in time.
 
 ## Requirements
 
@@ -70,7 +70,7 @@ The `~/meshvault/...` folders are the defaults used on the author's machines. Ed
 
 ## Check it without cameras
 
-The boundary check calls `camera_status` and `snapshot_camera` with four bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created. The pytest suite has five tests: unknown camera rejection, newest-first clip listing, and `clip_frame` rejection of unknown cameras, missing clips, and path escapes.
+The boundary check calls `camera_status` and `snapshot_camera` with four bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created. The pytest suite has nine tests: unknown camera rejection, newest-first clip listing, `clip_frame` rejection of unknown cameras, missing clips, path escapes, another camera's clip and negative `t`, and one `clip_frame` run on a synthetic video that is skipped when `ffmpeg` is not installed.
 
 ```bash
 uv run python scripts/check-camera-boundaries.py
@@ -87,7 +87,7 @@ Out of scope: PTZ, talkback, Eufy cloud APIs, recording, and retention. Recordin
 
 ## Status
 
-Early, version 0.1.0. The tests and the boundary check cover input rejection and clip listing. No test runs `ffmpeg` capture, talks to MediaMTX, or uses a camera. If MediaMTX is unreachable, `list_cameras` and `camera_status` raise an error instead of returning a not-ready state. `ffmpeg` calls are limited to 60 seconds, and a timeout also raises. Not published to PyPI and not deployed as a hosted service.
+Early, version 0.1.0. The tests and the boundary check cover input rejection and clip listing, and one test runs real `ffmpeg` on a generated clip through `clip_frame`. No test talks to MediaMTX, captures from RTSP, or uses a camera. If MediaMTX is unreachable, `list_cameras` and `camera_status` raise an error instead of returning a not-ready state. `ffmpeg` calls are limited to 60 seconds, and a timeout also raises. Not published to PyPI and not deployed as a hosted service.
 
 ## License
 
