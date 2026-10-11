@@ -23,7 +23,7 @@ The server registers six tools (`src/eufy_cam_mcp/server.py`).
 
 Every per-camera tool rejects names outside the allowlist, including path traversal attempts such as `../../outside`, before any MediaMTX call or `ffmpeg` process. `clip_frame` also rejects clip names that are not a bare `*.mp4` file name, clips whose name does not start with `<name>_` (a camera cannot read another camera's recording), and a negative or non-finite `t`. It returns `clip not found` for a name that does not exist in the recordings folder, and `ffmpeg extraction failed` when `t` is past the end of the clip.
 
-`snapshot_camera` and `clip_frame` write JPEGs to the snapshot folder. Nothing deletes them. `clip_frame` names its file `<name>_<clip stem>_t<t>.jpg`, so repeating a call overwrites the earlier frame. `recordings_info` sorts by file name, so with several cameras its first and last entries are alphabetical, not oldest and newest in time.
+`snapshot_camera` and `clip_frame` write JPEGs to the snapshot folder. Nothing prunes them. The only delete is `clip_frame` removing its own earlier output before a re-run writes it again. `clip_frame` names its file `<name>_<clip stem>_t<t>.jpg`, where `<t>` is `t` formatted with Python `:g` (`5.0` gives `t5`, `5.5` gives `t5.5`). `recordings_info` sorts by file name, so with several cameras its first and last entries are alphabetical, not oldest and newest in time.
 
 ## Requirements
 
