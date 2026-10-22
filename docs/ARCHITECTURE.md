@@ -18,7 +18,7 @@ flowchart LR
   agent(["AI agent<br/>MCP client"]):::actor
   server["MCP server<br/>6 view-only tools"]:::app
   mtx{{"MediaMTX<br/>localhost only"}}:::ext
-  ffmpeg["ffmpeg<br/>one frame, 60 s cap"]:::job
+  ffmpeg["ffmpeg<br/>one frame<br/>60 s cap"]:::job
   snaps[("Snapshots<br/>JPEG files")]:::store
   recs[("Recordings<br/>mp4, read-only")]:::store
   agent -->|"asks"| server
@@ -74,8 +74,8 @@ flowchart TB
     server["MCP server<br/>FastMCP over stdio"]:::app
     allow["Allowlist<br/>KNOWN_CAMS constant"]:::app
     ffmpeg["ffmpeg<br/>subprocess, 60 s limit"]:::job
-    snaps[("Snapshot folder<br/>~/meshvault/camera/snapshots")]:::store
-    recs[("Recordings folder<br/>~/meshvault/camera/recordings")]:::store
+    snaps[("Snapshot folder<br/>SNAP_DIR")]:::store
+    recs[("Recordings folder<br/>REC_DIR")]:::store
     tests["Boundary check + pytest<br/>uv run"]:::job
   end
   agent -->|"tool call (stdio)"| server
@@ -103,8 +103,8 @@ Hi-res: [SVG](architecture/containers.svg) · [PNG 3x](architecture/containers@3
 | MCP server | app | FastMCP over stdio | Registers six tools; rejects any camera name outside the allowlist before any I/O. | [`src/eufy_cam_mcp/server.py#L19-L19`](../src/eufy_cam_mcp/server.py#L19-L19), [`src/eufy_cam_mcp/server.py#L139-L140`](../src/eufy_cam_mcp/server.py#L139-L140) |
 | Allowlist | app | KNOWN_CAMS constant | eufy_cam1 to eufy_cam4. Unknown or traversal names return an error. | [`src/eufy_cam_mcp/server.py#L17`](../src/eufy_cam_mcp/server.py#L17), [`src/eufy_cam_mcp/server.py#L44-L45`](../src/eufy_cam_mcp/server.py#L44-L45) |
 | ffmpeg | job | subprocess, 60 s limit | One frame from RTSP or from a recorded clip. | [`src/eufy_cam_mcp/server.py#L67-L71`](../src/eufy_cam_mcp/server.py#L67-L71), [`src/eufy_cam_mcp/server.py#L130-L133`](../src/eufy_cam_mcp/server.py#L130-L133) |
-| Snapshot folder | store | ~/meshvault/camera/snapshots | JPEGs plus a <name>_latest.jpg symlink. Nothing prunes them. | [`src/eufy_cam_mcp/server.py#L15`](../src/eufy_cam_mcp/server.py#L15), [`src/eufy_cam_mcp/server.py#L66-L76`](../src/eufy_cam_mcp/server.py#L66-L76) |
-| Recordings folder | store | ~/meshvault/camera/recordings | <name>_*.mp4 segments written by a separate recorder; read-only here. | [`src/eufy_cam_mcp/server.py#L16`](../src/eufy_cam_mcp/server.py#L16), [`src/eufy_cam_mcp/server.py#L94-L95`](../src/eufy_cam_mcp/server.py#L94-L95) |
+| Snapshot folder | store | SNAP_DIR (default under the user's home) | JPEGs plus a <name>_latest.jpg symlink. Nothing prunes them. | [`src/eufy_cam_mcp/server.py#L15`](../src/eufy_cam_mcp/server.py#L15), [`src/eufy_cam_mcp/server.py#L66-L76`](../src/eufy_cam_mcp/server.py#L66-L76) |
+| Recordings folder | store | REC_DIR (default under the user's home) | <name>_*.mp4 segments written by a separate recorder; read-only here. | [`src/eufy_cam_mcp/server.py#L16`](../src/eufy_cam_mcp/server.py#L16), [`src/eufy_cam_mcp/server.py#L94-L95`](../src/eufy_cam_mcp/server.py#L94-L95) |
 | Boundary check + pytest | job | uv run | Proves bad names cause no MediaMTX call, no ffmpeg, no folder. | [`scripts/check-camera-boundaries.py`](../scripts/check-camera-boundaries.py), [`tests/test_server_tools.py`](../tests/test_server_tools.py) |
 
 ## 5. Key runtime sequences
@@ -200,7 +200,7 @@ flowchart LR
     srv["uv run eufy-cam-mcp<br/>stdio, one per client session"]:::app
     mtx{{"MediaMTX<br/>:9997 API, :8554 RTSP"}}:::ext
     ff["ffmpeg<br/>per call, 60 s cap"]:::job
-    disk[("~/meshvault/camera/")]:::store
+    disk[("Camera folders<br/>SNAP_DIR, REC_DIR")]:::store
   end
   client -->|"stdio"| srv
   srv -->|"HTTP"| mtx
@@ -229,7 +229,7 @@ Hi-res: [SVG](architecture/deployment.svg) · [PNG 3x](architecture/deployment@3
 | MediaMTX unreachable | list_cameras and camera_status raise instead of returning not-ready | Exception text from urlopen in the MCP client | [`src/eufy_cam_mcp/server.py#L22-L24`](../src/eufy_cam_mcp/server.py#L22-L24) |
 | ffmpeg fails or times out (60 s) | Returns `ffmpeg capture failed`; timeout raises | error field in the tool result | [`src/eufy_cam_mcp/server.py#L67-L77`](../src/eufy_cam_mcp/server.py#L67-L77) |
 | Camera name outside the allowlist | Error result, no process or network call | `unknown camera` in the result; boundary check script | [`src/eufy_cam_mcp/server.py#L44-L45`](../src/eufy_cam_mcp/server.py#L44-L45), [`scripts/check-camera-boundaries.py`](../scripts/check-camera-boundaries.py) |
-| Snapshot folder grows without bound | Disk fills slowly; nothing prunes JPEGs | `du ~/meshvault/camera/snapshots` | [`README.md#L26`](../README.md#L26) |
+| Snapshot folder grows without bound | Disk fills slowly; nothing prunes JPEGs | `du -sh` on the SNAP_DIR folder | [`README.md#L26`](../README.md#L26) |
 | No recorder service running | recordings_info and motion_clips return empty | Segment count 0 in recordings_info | [`src/eufy_cam_mcp/server.py#L80-L91`](../src/eufy_cam_mcp/server.py#L80-L91) |
 
 ## 9. State machine

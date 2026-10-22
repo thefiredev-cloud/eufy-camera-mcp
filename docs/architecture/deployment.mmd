@@ -5,7 +5,7 @@ flowchart LR
     srv["uv run eufy-cam-mcp<br/>stdio, one per client session"]:::app
     mtx{{"MediaMTX<br/>:9997 API, :8554 RTSP"}}:::ext
     ff["ffmpeg<br/>per call, 60 s cap"]:::job
-    disk[("~/meshvault/camera/")]:::store
+    disk[("Camera folders<br/>SNAP_DIR, REC_DIR")]:::store
   end
   client -->|"stdio"| srv
   srv -->|"HTTP"| mtx

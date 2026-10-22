@@ -2,7 +2,7 @@ flowchart LR
   agent(["AI agent<br/>MCP client"]):::actor
   server["MCP server<br/>6 view-only tools"]:::app
   mtx{{"MediaMTX<br/>localhost only"}}:::ext
-  ffmpeg["ffmpeg<br/>one frame, 60 s cap"]:::job
+  ffmpeg["ffmpeg<br/>one frame<br/>60 s cap"]:::job
   snaps[("Snapshots<br/>JPEG files")]:::store
   recs[("Recordings<br/>mp4, read-only")]:::store
   agent -->|"asks"| server

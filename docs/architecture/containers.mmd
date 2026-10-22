@@ -7,8 +7,8 @@ flowchart TB
     server["MCP server<br/>FastMCP over stdio"]:::app
     allow["Allowlist<br/>KNOWN_CAMS constant"]:::app
     ffmpeg["ffmpeg<br/>subprocess, 60 s limit"]:::job
-    snaps[("Snapshot folder<br/>~/meshvault/camera/snapshots")]:::store
-    recs[("Recordings folder<br/>~/meshvault/camera/recordings")]:::store
+    snaps[("Snapshot folder<br/>SNAP_DIR")]:::store
+    recs[("Recordings folder<br/>REC_DIR")]:::store
     tests["Boundary check + pytest<br/>uv run"]:::job
   end
   agent -->|"tool call (stdio)"| server
