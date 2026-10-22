@@ -1,0 +1,22 @@
+flowchart LR
+  cam{{"Eufy cameras"}}:::ext
+  mtx{{"MediaMTX"}}:::ext
+  rec{{"Recorder<br/>not in repo"}}:::ext
+  recs[("Recordings")]:::store
+  ff["ffmpeg"]:::job
+  snaps[("Snapshots")]:::store
+  srv["MCP server"]:::app
+  agent(["AI agent"]):::actor
+  cam -->|"stream"| mtx
+  mtx -->|"RTSP frame"| ff
+  mtx --> rec
+  rec -->|"mp4"| recs
+  recs -->|"clip frame"| ff
+  ff -->|"JPEG"| snaps
+  snaps -->|"path"| srv
+  srv -->|"JSON + path"| agent
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220

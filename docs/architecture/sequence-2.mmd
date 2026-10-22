@@ -1,0 +1,10 @@
+sequenceDiagram
+  autonumber
+  actor agent as Agent
+  participant srv as MCP server
+  participant mtx as MediaMTX API
+  agent->>srv: list_cameras()
+  srv->>mtx: GET http://127.0.0.1:9997/v3/paths/list (5 s timeout)
+  mtx-->>srv: paths with ready state and tracks
+  Note over srv: If MediaMTX is down the call raises, it does not report not-ready
+  srv-->>agent: four cameras with ready state

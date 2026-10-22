@@ -1,0 +1,17 @@
+flowchart LR
+  agent(["AI agent<br/>MCP client"]):::actor
+  server["MCP server<br/>6 view-only tools"]:::app
+  mtx{{"MediaMTX<br/>localhost only"}}:::ext
+  ffmpeg["ffmpeg<br/>one frame, 60 s cap"]:::job
+  snaps[("Snapshots<br/>JPEG files")]:::store
+  recs[("Recordings<br/>mp4, read-only")]:::store
+  agent -->|"asks"| server
+  server -->|"status"| mtx
+  server -->|"grab"| ffmpeg
+  ffmpeg -->|"writes"| snaps
+  recs -->|"clips"| server
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220
