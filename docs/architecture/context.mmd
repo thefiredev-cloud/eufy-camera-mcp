@@ -1,0 +1,14 @@
+flowchart LR
+  agent(["AI agent (MCP client)"]):::actor
+  SYSTEM["eufy-camera-mcp<br/>the system in this repo"]:::app
+  mtx{{"MediaMTX (127.0.0.1)"}}:::ext
+  cams{{"Eufy cameras (RTSP)"}}:::ext
+  recorder{{"Recorder service (not in repo)"}}:::ext
+  agent -->|"tool call (stdio)"| SYSTEM
+  SYSTEM -->|"GET /v3/paths/list"| mtx
+  SYSTEM -->|"RTSP :8554"| mtx
+  mtx -.->|"streams"| cams
+  recorder -.->|"writes mp4"| SYSTEM
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3

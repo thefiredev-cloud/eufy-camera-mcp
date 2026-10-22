@@ -91,6 +91,34 @@ Out of scope: PTZ, talkback, Eufy cloud APIs, recording, and retention. Recordin
 
 Early, version 0.1.0. The tests and the boundary check cover input rejection and clip listing, and one test runs real `ffmpeg` on a generated clip through `clip_frame`. No test talks to MediaMTX, captures from RTSP, or uses a camera. If MediaMTX is unreachable, `list_cameras` and `camera_status` raise an error instead of returning a not-ready state. `ffmpeg` calls are limited to 60 seconds, and a timeout also raises. Not published to PyPI and not deployed as a hosted service.
 
+<!-- arch:begin -->
+## Architecture
+
+A view-only MCP server that lets an AI agent see four allowlisted local Eufy cameras through MediaMTX.
+
+```mermaid
+flowchart LR
+  agent(["AI agent<br/>MCP client"]):::actor
+  server["MCP server<br/>6 view-only tools"]:::app
+  mtx{{"MediaMTX<br/>localhost only"}}:::ext
+  ffmpeg["ffmpeg<br/>one frame<br/>60 s cap"]:::job
+  snaps[("Snapshots<br/>JPEG files")]:::store
+  recs[("Recordings<br/>mp4, read-only")]:::store
+  agent -->|"asks"| server
+  server -->|"status"| mtx
+  server -->|"grab"| ffmpeg
+  ffmpeg -->|"writes"| snaps
+  recs -->|"clips"| server
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220
+```
+
+[Full architecture](docs/ARCHITECTURE.md) · Hi-res: [SVG](docs/architecture/whiteboard.svg) · [PNG 3x](docs/architecture/whiteboard@3x.png) · [dark PNG](docs/architecture/whiteboard.dark@3x.png) · [Explorable (Archify)](docs/architecture/eufy-camera-mcp.archify.html) · [Graphify report](docs/architecture/graphify/GRAPH_REPORT.md)
+<!-- arch:end -->
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

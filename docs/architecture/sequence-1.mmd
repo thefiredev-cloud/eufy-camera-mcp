@@ -1,0 +1,17 @@
+sequenceDiagram
+  autonumber
+  actor agent as Agent
+  participant srv as MCP server
+  participant ff as ffmpeg
+  participant mtx as MediaMTX RTSP
+  participant fs as Snapshot folder
+  agent->>srv: snapshot_camera(name)
+  alt name not in KNOWN_CAMS
+    srv-->>agent: error: unknown camera
+  else known camera
+    srv->>ff: ffmpeg -rtsp_transport tcp -i rtsp://127.0.0.1:8554/name -vframes 1
+    ff->>mtx: pull one frame
+    ff->>fs: write JPEG
+    srv->>fs: refresh name_latest.jpg symlink
+    srv-->>agent: path and latest link
+  end

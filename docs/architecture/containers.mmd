@@ -1,0 +1,29 @@
+flowchart TB
+  agent(["AI agent (MCP client)"]):::actor
+  mtx{{"MediaMTX (127.0.0.1)"}}:::ext
+  cams{{"Eufy cameras (RTSP)"}}:::ext
+  recorder{{"Recorder service (not in repo)"}}:::ext
+  subgraph SYSTEM["eufy-camera-mcp"]
+    server["MCP server<br/>FastMCP over stdio"]:::app
+    allow["Allowlist<br/>KNOWN_CAMS constant"]:::app
+    ffmpeg["ffmpeg<br/>subprocess, 60 s limit"]:::job
+    snaps[("Snapshot folder<br/>SNAP_DIR")]:::store
+    recs[("Recordings folder<br/>REC_DIR")]:::store
+    tests["Boundary check + pytest<br/>uv run"]:::job
+  end
+  agent -->|"tool call (stdio)"| server
+  server -->|"name check"| allow
+  server -->|"GET /v3/paths/list"| mtx
+  server -->|"one frame"| ffmpeg
+  ffmpeg -->|"RTSP :8554"| mtx
+  mtx -.->|"streams"| cams
+  ffmpeg -->|"write JPEG"| snaps
+  ffmpeg -->|"read clip"| recs
+  recorder -.->|"writes mp4"| recs
+  server -->|"list clips"| recs
+  tests -.->|"boundary check"| server
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220

@@ -1,0 +1,107 @@
+{
+ "repo": "eufy-camera-mcp",
+ "files_tracked": 10,
+ "head": "7090c0e3436c7b2a5754bca3e4d57cf63b32a052",
+ "origin": "https://github.com/thefiredev-cloud/eufy-camera-mcp.git",
+ "default_branch": "main",
+ "languages": [
+  [
+   ".py",
+   3
+  ],
+  [
+   ".md",
+   2
+  ],
+  [
+   ".yml",
+   1
+  ],
+  [
+   ".toml",
+   1
+  ],
+  [
+   ".lock",
+   1
+  ]
+ ],
+ "readme": "README.md",
+ "readme_first_paragraph": "A Python [FastMCP](https://gofastmcp.com) server that gives an AI agent view-only access to an allowlisted set of local Eufy cameras through [MediaMTX](https://github.com/bluenviron/mediamtx): live status, a single JPEG snapshot, and recorded motion clips. It has no PTZ, no talkback, and no cloud API.",
+ "top_dirs": [
+  ".github",
+  "scripts",
+  "src",
+  "tests"
+ ],
+ "manifests": [
+  {
+   "path": "pyproject.toml",
+   "kind": "python",
+   "name": "eufy-cam-mcp"
+  }
+ ],
+ "libs": [
+  {
+   "category": "proto",
+   "label": "Model Context Protocol",
+   "dep": "fastmcp",
+   "manifest": "pyproject.toml"
+  }
+ ],
+ "entry_points": [
+  {
+   "kind": "console_script",
+   "name": "eufy-cam-mcp",
+   "path": "eufy_cam_mcp.server:main",
+   "from": "pyproject.toml"
+  },
+  {
+   "kind": "scripts",
+   "count": 1,
+   "paths": [
+    "scripts/check-camera-boundaries.py"
+   ]
+  },
+  {
+   "kind": "python-script-main",
+   "count": 2,
+   "paths": [
+    "scripts/check-camera-boundaries.py",
+    "src/eufy_cam_mcp/server.py"
+   ]
+  }
+ ],
+ "services": [],
+ "deploy_targets": [],
+ "ci_workflows": [
+  {
+   "path": ".github/workflows/ci.yml",
+   "name": "CI & Boundary Verification",
+   "on": [
+    "push",
+    "pull_request"
+   ],
+   "jobs": [
+    "verify"
+   ],
+   "deploy_hints": []
+  }
+ ],
+ "cron_and_timers": [],
+ "files_scanned": 5,
+ "external_hosts": [],
+ "env_var_names": [],
+ "ci_secret_names": [],
+ "data_store_signals": {},
+ "auth_signals": {
+  "Binds loopback only": [
+   "src/eufy_cam_mcp/server.py:13"
+  ]
+ },
+ "tests": [
+  "tests",
+  "tests/test_server_tools.py"
+ ],
+ "docs_files": []
+}
