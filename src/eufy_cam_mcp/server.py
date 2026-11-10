@@ -1,4 +1,4 @@
-"""MeshVault Eufy camera MCP server (read-first: snapshots + status, no PTZ)."""
+"""Kodros Eufy camera MCP server (read-first: snapshots + status, no PTZ)."""
 from __future__ import annotations
 
 import json
