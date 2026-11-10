@@ -72,7 +72,7 @@ The `~/meshvault/...` folders are the defaults used on the author's machines. Ed
 
 ## Check it without cameras
 
-The boundary check calls `camera_status` and `snapshot_camera` with four bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created. The pytest suite has nine tests: unknown camera rejection, newest-first clip listing, `clip_frame` rejection of unknown cameras, missing clips, path escapes, another camera's clip and negative `t`, and one `clip_frame` run on a synthetic video that is skipped when `ffmpeg` is not installed.
+The boundary check calls `camera_status` and `snapshot_camera` with four bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created. The pytest suite has nine cases: unknown camera rejection, newest-first clip listing, `clip_frame` rejection of unknown cameras, missing clips, path escapes, another camera's clip and negative `t` values. The implementation also rejects non-finite `t` values, but the suite does not test them. One `clip_frame` test uses a synthetic video and is skipped when `ffmpeg` is not installed.
 
 ```bash
 uv run ruff check .
