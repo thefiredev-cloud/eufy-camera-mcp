@@ -18,7 +18,7 @@ The server registers six tools (`src/eufy_cam_mcp/server.py`).
 | `camera_status` | Ready state, tracks, received bytes, and inbound frames in error for one camera |
 | `snapshot_camera` | Path to one JPEG frame grabbed with `ffmpeg` from local RTSP, plus a `<name>_latest.jpg` symlink to it |
 | `recordings_info` | Segment count, total bytes, alphabetical first and last file names, and the fixed note `managed by recorder.mjs; 7-day default, runtime override not inspected` |
-| `motion_clips` | Paths of the newest `<name>_*.mp4` recordings for one camera by modification time, `limit` clamped to 1 to 50 |
+| `motion_clips` | Paths of the newest `<name>_*.mp4` recordings for one camera by modification time, `limit` clamped to 1 to 50, plus `count` and total `bytes` of the returned clips |
 | `clip_frame` | Path to one JPEG frame at `t` seconds into a named clip of that camera in the recordings folder |
 
 Every per-camera tool rejects names outside the allowlist, including path traversal attempts such as `../../outside`, before any MediaMTX call or `ffmpeg` process. `clip_frame` also rejects clip names that are not a bare `*.mp4` file name, clips whose name does not start with `<name>_` (a camera cannot read another camera's recording), and a negative or non-finite `t`. It returns `clip not found` for a name that does not exist in the recordings folder, and `ffmpeg extraction failed` when `t` is past the end of the clip.
@@ -75,6 +75,7 @@ The `~/meshvault/...` folders are the defaults used on the author's machines. Ed
 The boundary check calls `camera_status` and `snapshot_camera` with four bad camera names and confirms that no MediaMTX call, network connection, `ffmpeg` process, or snapshot folder was created. The pytest suite has nine tests: unknown camera rejection, newest-first clip listing, `clip_frame` rejection of unknown cameras, missing clips, path escapes, another camera's clip and negative `t`, and one `clip_frame` run on a synthetic video that is skipped when `ffmpeg` is not installed.
 
 ```bash
+uv run ruff check .
 uv run python scripts/check-camera-boundaries.py
 uv run pytest -v
 ```
@@ -89,7 +90,7 @@ Out of scope: PTZ, talkback, Eufy cloud APIs, recording, and retention. Recordin
 
 ## Status
 
-Early, version 0.1.0. The tests and the boundary check cover input rejection and clip listing, and one test runs real `ffmpeg` on a generated clip through `clip_frame`. No test talks to MediaMTX, captures from RTSP, or uses a camera. If MediaMTX is unreachable, `list_cameras` and `camera_status` raise an error instead of returning a not-ready state. `ffmpeg` calls are limited to 60 seconds, and a timeout also raises. Not published to PyPI and not deployed as a hosted service.
+Early, version 0.1.0. The tests and the boundary check cover input rejection and clip listing, and one test runs real `ffmpeg` on a generated clip through `clip_frame`. No test talks to MediaMTX, captures from RTSP, or uses a camera. If MediaMTX is unreachable, `list_cameras` and `camera_status` raise an error instead of returning a not-ready state. If MediaMTX is reachable but does not list a known camera, `list_cameras` reports it as not ready with no tracks, and `camera_status` returns `ready: false` with the error `not found in MediaMTX`. `ffmpeg` calls are limited to 60 seconds, and a timeout also raises. Not published to PyPI and not deployed as a hosted service.
 
 <!-- arch:begin -->
 ## Architecture
