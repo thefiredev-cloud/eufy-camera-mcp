@@ -17,7 +17,7 @@ The server registers six tools (`src/eufy_cam_mcp/server.py`).
 | `list_cameras` | Each known camera with its ready state and tracks from MediaMTX |
 | `camera_status` | Ready state, tracks, received bytes, and inbound frames in error for one camera |
 | `snapshot_camera` | Path to one JPEG frame grabbed with `ffmpeg` from local RTSP, plus a `<name>_latest.jpg` symlink to it |
-| `recordings_info` | Segment count, total bytes, alphabetical first and last file names, and the fixed note `managed by recorder.mjs; 7-day default, runtime override not inspected` |
+| `recordings_info` | `segments` (count), `bytes` (total), `oldest` and `newest` (alphabetical first and last file names), and `retention_policy` set to the fixed note `managed by recorder.mjs; 7-day default, runtime override not inspected` |
 | `motion_clips` | Paths of the newest `<name>_*.mp4` recordings for one camera by modification time, `limit` clamped to 1 to 50, plus `count` and total `bytes` of the returned clips |
 | `clip_frame` | Path to one JPEG frame at `t` seconds into a named clip of that camera in the recordings folder |
 
